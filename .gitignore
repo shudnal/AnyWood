@@ -363,3 +363,5 @@ MigrationBackup/
 FodyWeavers.xsd
 /thunderstore/AnyWood.zip
 /thunderstore/AnyWood.dll
+/package/thunderstore/AnyWood.zip
+/package/thunderstore/AnyWood/AnyWood.dll
