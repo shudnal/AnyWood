@@ -11,20 +11,12 @@ Transmute any wood to wood, use any wood as coal, burn any wood for fuel.
 extract AnyWood.dll to your BepInEx\Plugins\ folder.
 
 ## Known issues
-* Incompatible with ItsJustWood due to its incorrect implementation at 1.0.2 version and overall similar purpose
+* Incompatible with ItsJustWood due to overall similar purpose
 
 ## Configurating
-The best way to handle configs is configuration manager. Choose one that works for you:
+The best way to handle configs is [Configuration Manager](https://thunderstore.io/c/valheim/p/shudnal/ConfigurationManager/).
 
-https://www.nexusmods.com/site/mods/529
-
-https://valheim.thunderstore.io/package/Azumatt/Official_BepInEx_ConfigurationManager/
+Or [Official BepInEx Configuration Manager](https://valheim.thunderstore.io/package/Azumatt/Official_BepInEx_ConfigurationManager/)
 
 ## Mirrors
-
 [Nexus](https://www.nexusmods.com/valheim/mods/2560)
-
-## Changelog
-
-v 1.0.0
-* Initial release

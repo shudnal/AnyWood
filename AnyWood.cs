@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Reflection;
+﻿using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
-using BepInEx.Logging;
 using HarmonyLib;
 using UnityEngine;
 using ServerSync;
@@ -15,7 +13,7 @@ namespace AnyWood
     {
         private const string pluginID = "shudnal.AnyWood";
         private const string pluginName = "Any Wood";
-        private const string pluginVersion = "1.0.0";
+        private const string pluginVersion = "1.0.1";
 
         private Harmony _harmony;
 
@@ -31,22 +29,26 @@ namespace AnyWood
         private static ConfigEntry<Vector3> coreWoodToWood;
         private static ConfigEntry<Vector3> ancientBarkToWood;
         private static ConfigEntry<Vector3> yggdrasilWoodToWood;
+        private static ConfigEntry<Vector3> ashWoodToWood;
 
         private static ConfigEntry<bool> fineWoodForFuel;
         private static ConfigEntry<bool> coreWoodForFuel;
         private static ConfigEntry<bool> ancientBarkForFuel;
         private static ConfigEntry<bool> yggdrasilWoodForFuel;
+        private static ConfigEntry<bool> ashWoodForFuel;
 
         private static ConfigEntry<bool> fineWoodForCoal;
         private static ConfigEntry<bool> coreWoodForCoal;
         private static ConfigEntry<bool> ancientBarkForCoal;
         private static ConfigEntry<bool> yggdrasilWoodForCoal;
+        private static ConfigEntry<bool> ashWoodForCoal;
 
         private static ItemDrop wood;
         private static ItemDrop fineWood;
         private static ItemDrop coreWood;
         private static ItemDrop ancientBark;
         private static ItemDrop yggdrasilWood;
+        private static ItemDrop ashWood;
         private static ItemDrop coal;
 
         private static CraftingStation workbench;
@@ -76,16 +78,20 @@ namespace AnyWood
                                                                                                           "\nSet 0 to wood to disable recipe. Set 0 to station to disable station requirement.");
             yggdrasilWoodToWood = config("Transmute", "Yggdrasil wood", defaultValue: new Vector3(10, 10, 5), "Yggdrasil wood to wood transmute recipe. First is yggdrasil wood used, second basic wood result, third - workbench level required. " +
                                                                                                               "\nSet 0 to wood to disable recipe. Set 0 to station to disable station requirement.");
+            ashWoodToWood = config("Transmute", "Ash wood", defaultValue: new Vector3(10, 10, 5), "Ash wood to wood transmute recipe. First is ash wood used, second basic wood result, third - workbench level required. " +
+                                                                                                              "\nSet 0 to wood to disable recipe. Set 0 to station to disable station requirement.");
 
             fineWoodForFuel = config("Fuel", "Fine wood", defaultValue: false, "Use fine wood as a fuel at cooking station, bath and fireplaces");
             coreWoodForFuel = config("Fuel", "Core wood", defaultValue: true, "Use core wood as a fuel at cooking station, bath and fireplaces");
             ancientBarkForFuel = config("Fuel", "Ancient bark", defaultValue: true, "Use ancient bark as a fuel at cooking station, bath and fireplaces");
             yggdrasilWoodForFuel = config("Fuel", "Yggdrasil wood", defaultValue: false, "Use yggdrasil wood as a fuel at cooking station, bath and fireplaces");
+            ashWoodForFuel = config("Fuel", "Ash wood", defaultValue: false, "Use ash wood as a fuel at cooking station, bath and fireplaces");
 
             fineWoodForCoal = config("Coal", "Fine wood", defaultValue: true, "Use fine wood as a source of coal in charcoal kiln");
             coreWoodForCoal = config("Coal", "Core wood", defaultValue: true, "Use core wood as a source of coal in charcoal kiln");
             ancientBarkForCoal = config("Coal", "Ancient bark", defaultValue: true, "Use ancient bark as a source of coal in charcoal kiln");
             yggdrasilWoodForCoal = config("Coal", "Yggdrasil wood", defaultValue: false, "Use yggdrasil wood as a source of coal in charcoal kiln");
+            ashWoodForCoal = config("Coal", "Ash wood", defaultValue: false, "Use ash wood as a source of coal in charcoal kiln");
         }
 
         ConfigEntry<T> config<T>(string group, string name, T defaultValue, ConfigDescription description, bool synchronizedSetting = true)
@@ -113,7 +119,7 @@ namespace AnyWood
             if (!modEnabled.Value) 
                 return false;
 
-            return wood != null && fineWood != null && coreWood != null && ancientBark != null && yggdrasilWood != null && coal != null && workbench != null;
+            return wood != null && fineWood != null && coreWood != null && ancientBark != null && yggdrasilWood != null && ashWood != null && coal != null && workbench != null;
         }
 
         private static void InitializeItems(ObjectDB instance)
@@ -123,6 +129,7 @@ namespace AnyWood
             coreWood = instance.GetItemPrefab("RoundLog").GetComponent<ItemDrop>();
             ancientBark = instance.GetItemPrefab("ElderBark").GetComponent<ItemDrop>();
             yggdrasilWood = instance.GetItemPrefab("YggdrasilWood").GetComponent<ItemDrop>();
+            ashWood = instance.GetItemPrefab("Blackwood").GetComponent<ItemDrop>();
             coal = instance.GetItemPrefab("Coal").GetComponent<ItemDrop>();
 
             workbench = GetWorkbench(instance);
@@ -150,6 +157,7 @@ namespace AnyWood
             AddTransmuteRecipe(instance, itemUsed: fineWood, itemResult: wood, ratio: fineWoodToWood.Value);
             AddTransmuteRecipe(instance, itemUsed: ancientBark, itemResult: wood, ratio: ancientBarkToWood.Value);
             AddTransmuteRecipe(instance, itemUsed: yggdrasilWood, itemResult: wood, ratio: yggdrasilWoodToWood.Value);
+            AddTransmuteRecipe(instance, itemUsed: ashWood, itemResult: wood, ratio: ashWoodToWood.Value);
         }
 
         private static void AddTransmuteRecipe(ObjectDB instance, ItemDrop itemUsed, ItemDrop itemResult, Vector3 ratio)
@@ -238,6 +246,12 @@ namespace AnyWood
                 return yggdrasilWood;
             }
 
+            if (ashWoodForFuel.Value && inventory.HaveItem(ashWood.m_itemData.m_shared.m_name))
+            {
+                LogInfo($"Used {ashWood.m_itemData.m_shared.m_name} instead of {builtIn.m_itemData.m_shared.m_name}");
+                return ashWood;
+            }
+
             return null;
         }
 
@@ -311,6 +325,7 @@ namespace AnyWood
                 CheckCoalConversion(__instance, coreWood, coreWoodForCoal.Value);
                 CheckCoalConversion(__instance, ancientBark, ancientBarkForCoal.Value);
                 CheckCoalConversion(__instance, yggdrasilWood, yggdrasilWoodForCoal.Value);
+                CheckCoalConversion(__instance, ashWood, ashWoodForCoal.Value);
             }
         }
 
