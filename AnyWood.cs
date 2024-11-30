@@ -11,9 +11,9 @@ namespace AnyWood
     [BepInIncompatibility("randyknapp.mods.itsjustwood")]
     public class AnyWood : BaseUnityPlugin
     {
-        private const string pluginID = "shudnal.AnyWood";
-        private const string pluginName = "Any Wood";
-        private const string pluginVersion = "1.0.1";
+        public const string pluginID = "shudnal.AnyWood";
+        public const string pluginName = "Any Wood";
+        public const string pluginVersion = "1.0.2";
 
         private Harmony _harmony;
 
@@ -81,6 +81,12 @@ namespace AnyWood
             ashWoodToWood = config("Transmute", "Ash wood", defaultValue: new Vector3(10, 10, 5), "Ash wood to wood transmute recipe. First is ash wood used, second basic wood result, third - workbench level required. " +
                                                                                                               "\nSet 0 to wood to disable recipe. Set 0 to station to disable station requirement.");
 
+            fineWoodToWood.SettingChanged += (s, e) => AddRecipes(ObjectDB.instance);
+            coreWoodToWood.SettingChanged += (s, e) => AddRecipes(ObjectDB.instance);
+            ancientBarkToWood.SettingChanged += (s, e) => AddRecipes(ObjectDB.instance);
+            yggdrasilWoodToWood.SettingChanged += (s, e) => AddRecipes(ObjectDB.instance);
+            ashWoodToWood.SettingChanged += (s, e) => AddRecipes(ObjectDB.instance);
+
             fineWoodForFuel = config("Fuel", "Fine wood", defaultValue: false, "Use fine wood as a fuel at cooking station, bath and fireplaces");
             coreWoodForFuel = config("Fuel", "Core wood", defaultValue: true, "Use core wood as a fuel at cooking station, bath and fireplaces");
             ancientBarkForFuel = config("Fuel", "Ancient bark", defaultValue: true, "Use ancient bark as a fuel at cooking station, bath and fireplaces");
@@ -92,6 +98,12 @@ namespace AnyWood
             ancientBarkForCoal = config("Coal", "Ancient bark", defaultValue: true, "Use ancient bark as a source of coal in charcoal kiln");
             yggdrasilWoodForCoal = config("Coal", "Yggdrasil wood", defaultValue: false, "Use yggdrasil wood as a source of coal in charcoal kiln");
             ashWoodForCoal = config("Coal", "Ash wood", defaultValue: false, "Use ash wood as a source of coal in charcoal kiln");
+
+            fineWoodForCoal.SettingChanged += (s, e) => CheckSmeltersCoalConversion();
+            coreWoodForCoal.SettingChanged += (s, e) => CheckSmeltersCoalConversion();
+            ancientBarkForCoal.SettingChanged += (s, e) => CheckSmeltersCoalConversion();
+            yggdrasilWoodForCoal.SettingChanged += (s, e) => CheckSmeltersCoalConversion();
+            ashWoodForCoal.SettingChanged += (s, e) => CheckSmeltersCoalConversion();
         }
 
         ConfigEntry<T> config<T>(string group, string name, T defaultValue, ConfigDescription description, bool synchronizedSetting = true)
@@ -124,6 +136,9 @@ namespace AnyWood
 
         private static void InitializeItems(ObjectDB instance)
         {
+            if (instance == null)
+                return;
+
             wood = instance.GetItemPrefab("Wood").GetComponent<ItemDrop>();
             fineWood = instance.GetItemPrefab("FineWood").GetComponent<ItemDrop>();
             coreWood = instance.GetItemPrefab("RoundLog").GetComponent<ItemDrop>();
@@ -138,18 +153,17 @@ namespace AnyWood
         private static CraftingStation GetWorkbench(ObjectDB instance)
         {
             foreach (var recipe in instance.m_recipes)
-            {
                 if (recipe.m_craftingStation != null && (recipe.m_craftingStation.m_name == "$piece_workbench" || recipe.m_craftingStation.name == "piece_workbench"))
-                {
                     return recipe.m_craftingStation;
-                }
-            }
 
             return null;
         }
 
         private static void AddRecipes(ObjectDB instance)
         {
+            if (instance == null)
+                return;
+
             if (!IsItemsReady())
                 return;
 
@@ -278,6 +292,20 @@ namespace AnyWood
             }
         }
 
+        private static void CheckSmeltersCoalConversion() => Piece.s_allPieces.Do(piece => CheckCoalConversions(piece?.GetComponent<Smelter>()));
+
+        private static void CheckCoalConversions(Smelter smelter)
+        {
+            if (smelter == null)
+                return;
+
+            CheckCoalConversion(smelter, fineWood, fineWoodForCoal.Value);
+            CheckCoalConversion(smelter, coreWood, coreWoodForCoal.Value);
+            CheckCoalConversion(smelter, ancientBark, ancientBarkForCoal.Value);
+            CheckCoalConversion(smelter, yggdrasilWood, yggdrasilWoodForCoal.Value);
+            CheckCoalConversion(smelter, ashWood, ashWoodForCoal.Value);
+        }
+
         [HarmonyPatch(typeof(ObjectDB), nameof(ObjectDB.CopyOtherDB))]
         private static class ObjectDB_CopyOtherDB_TransmuteRecipes
         {
@@ -321,11 +349,7 @@ namespace AnyWood
                 if (__instance.m_conversion.Find(x => x.m_from == wood) == null)
                     return;
 
-                CheckCoalConversion(__instance, fineWood, fineWoodForCoal.Value);
-                CheckCoalConversion(__instance, coreWood, coreWoodForCoal.Value);
-                CheckCoalConversion(__instance, ancientBark, ancientBarkForCoal.Value);
-                CheckCoalConversion(__instance, yggdrasilWood, yggdrasilWoodForCoal.Value);
-                CheckCoalConversion(__instance, ashWood, ashWoodForCoal.Value);
+                CheckCoalConversions(__instance);
             }
         }
 
@@ -436,5 +460,4 @@ namespace AnyWood
 
         }
     }
-
 }
