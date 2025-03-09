@@ -13,7 +13,7 @@ namespace AnyWood
     {
         public const string pluginID = "shudnal.AnyWood";
         public const string pluginName = "Any Wood";
-        public const string pluginVersion = "1.0.2";
+        public const string pluginVersion = "1.0.3";
 
         private Harmony _harmony;
 
